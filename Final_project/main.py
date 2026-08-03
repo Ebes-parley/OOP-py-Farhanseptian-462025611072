@@ -1,6 +1,13 @@
 import sys
 
-
+# ==========================================
+# 1. CUSTOM EXCEPTION (Syarat Persyaratan)
+# ==========================================
+class DPIncompleteError(Exception):
+    """Exception khusus jika nominal DP kurang dari 50%"""
+    def __init__(self, message=" [GAGAL] DP minimal 50% dari total tagihan!"):
+        self.message = message
+        super().__init__(self.message)
 
 
 class PesananPakaian:
@@ -11,13 +18,19 @@ class PesananPakaian:
         self.tenggat_waktu = tenggat_waktu
         self.harga_dasar_per_pcs = harga_dasar_per_pcs
         
-        
+        # Encapsulation (Private Attributes)
         self.__total_biaya = 0
         self.__jumlah_dp = 0
         self.__status_pembayaran = "Pending (Belum DP)"
         self.__status_produksi = "Antrean"
 
-    
+    # ==========================================
+    # 2. MAGIC METHOD __str__ (Syarat Persyaratan)
+    # ==========================================
+    def __str__(self):
+        return f"[{self.id_pesanan}] {self.nama_pelanggan} - {self.jumlah_pcs} pcs (Status: {self.__status_produksi})"
+
+    # Getter & Setter (Encapsulation)
     def get_total_biaya(self):
         return self.__total_biaya
 
@@ -31,11 +44,10 @@ class PesananPakaian:
     def get_status_produksi(self):
         return self.__status_produksi
 
-    
+    # Menembakkan Custom Exception jika DP kurang dari 50%
     def set_bayar_dp(self, nominal):
         if nominal < (self.__total_biaya * 0.5):
-            print(f" [GAGAL] DP minimal 50% dari total tagihan (Rp {self.__total_biaya * 0.5:,.0f})")
-            return False
+            raise DPIncompleteError(f" [GAGAL] DP minimal 50% dari total tagihan (Rp {self.__total_biaya * 0.5:,.0f})")
         else:
             self.__jumlah_dp = nominal
             self.__status_pembayaran = "Diproses (DP Lunas)"
@@ -46,7 +58,6 @@ class PesananPakaian:
     def update_status_produksi(self, status_baru):
         self.__status_produksi = status_baru
 
-    
     def hitung_biaya_produksi(self):
         total = self.jumlah_pcs * self.harga_dasar_per_pcs
         self.set_total_biaya(total)
@@ -62,12 +73,15 @@ class PesananPakaian:
         print(f"Status Produksi  : {self.get_status_produksi()}")
 
 
+# ==========================================
+# INHERITANCE & POLYMORPHISM (Child Classes)
+# ==========================================
 class PesananKaos(PesananPakaian):
     def __init__(self, id_pesanan, nama_pelanggan, jumlah_pcs, tenggat_waktu, jenis_sablon):
         super().__init__(id_pesanan, nama_pelanggan, jumlah_pcs, tenggat_waktu, harga_dasar_per_pcs=55000)
         self.jenis_sablon = jenis_sablon
 
-    # Polymorphism: Override kalkulasi biaya sablon
+    # Polymorphism: Override kalkulasi biaya
     def hitung_biaya_produksi(self):
         biaya_sablon = 10000 if self.jenis_sablon.lower() == "plastisol" else 5000
         total = self.jumlah_pcs * (self.harga_dasar_per_pcs + biaya_sablon)
@@ -85,6 +99,7 @@ class PesananKorsa(PesananPakaian):
         self.jenis_kancing = jenis_kancing
         self.pakai_puring = pakai_puring
 
+    # Polymorphism: Override kalkulasi biaya
     def hitung_biaya_produksi(self):
         biaya_tambahan = 15000 if self.pakai_puring else 0
         total = self.jumlah_pcs * (self.harga_dasar_per_pcs + biaya_tambahan)
@@ -102,7 +117,7 @@ class PesananJaket(PesananPakaian):
         self.jenis_resleting = jenis_resleting
         self.bahan_furing = bahan_furing
 
-    # Polymorphism: Override kalkulasi biaya jaket (Resleting Premium / Furing)
+    # Polymorphism: Override kalkulasi biaya
     def hitung_biaya_produksi(self):
         biaya_resleting = 15000 if self.jenis_resleting.lower() == "ykk" else 5000
         biaya_furing = 10000 if self.bahan_furing.lower() == "despo" else 5000
@@ -115,10 +130,21 @@ class PesananJaket(PesananPakaian):
         print(f"Kategori         : Jaket (Resleting: {self.jenis_resleting}, Furing: {self.bahan_furing})")
 
 
+# ==========================================
+# CLI SYSTEM CLASS
+# ==========================================
 class ConfectionerySystemCLI:
     def __init__(self):
         self.daftar_pesanan = []
         self.counter_id = 1
+
+    # ==========================================
+    # 3. STATIC METHOD (Syarat Persyaratan)
+    # ==========================================
+    @staticmethod
+    def format_rupiah(nominal):
+        """Method independen untuk format nominal Rupiah"""
+        return f"Rp {nominal:,.0f}"
 
     def menu_utama(self):
         while True:
@@ -148,37 +174,47 @@ class ConfectionerySystemCLI:
 
     def tambah_pesanan(self):
         print("\n--- TAMBAH PESANAN ---")
-        nama = input("Nama Pelanggan: ")
-        jumlah = int(input("Jumlah (pcs): "))
-        tenggat = input("Tenggat Waktu (YYYY-MM-DD): ")
+        # ==========================================
+        # 4. EXCEPTION HANDLING (Syarat Persyaratan)
+        # ==========================================
+        try:
+            nama = input("Nama Pelanggan: ")
+            jumlah = int(input("Jumlah (pcs): "))
+            tenggat = input("Tenggat Waktu (YYYY-MM-DD): ")
+            
+            print("\nJenis Pakaian:")
+            print("1. Kaos")
+            print("2. Korsa")
+            print("3. Jaket")
+            jenis = input("Pilih (1-3): ")
+
+            id_str = f"PO-{self.counter_id:03d}"
+            pesanan = None
+
+            if jenis == "1":
+                sablon = input("Jenis Sablon (Plastisol/Rubber): ")
+                pesanan = PesananKaos(id_str, nama, jumlah, tenggat, sablon)
+            elif jenis == "2":
+                kancing = input("Jenis Kancing: ")
+                puring = input("Pakai Puring? (y/n): ").lower() == 'y'
+                pesanan = PesananKorsa(id_str, nama, jumlah, tenggat, kancing, puring)
+            elif jenis == "3":
+                resleting = input("Jenis Resleting (YKK/Biasa): ")
+                furing = input("Bahan Furing (Despo/Jaring): ")
+                pesanan = PesananJaket(id_str, nama, jumlah, tenggat, resleting, furing)
+            else:
+                print("Pilihan jenis pakaian tidak valid!")
+                return
+
+            if pesanan:
+                total = pesanan.hitung_biaya_produksi()
+                self.daftar_pesanan.append(pesanan)
+                self.counter_id += 1
+                # Menggunakan Static Method untuk format Rupiah
+                print(f"\n[BERHASIL] Pesanan berhasil dibuat dengan Total Biaya: {self.format_rupiah(total)}")
         
-        print("\nJenis Pakaian:")
-        print("1. Kaos")
-        print("2. Korsa")
-        print("3. Jaket")
-        jenis = input("Pilih (1-3): ")
-
-        id_str = f"PO-{self.counter_id:03d}"
-        pesanan = None
-
-        if jenis == "1":
-            sablon = input("Jenis Sablon (Plastisol/Rubber): ")
-            pesanan = PesananKaos(id_str, nama, jumlah, tenggat, sablon)
-        elif jenis == "2":
-            kancing = input("Jenis Kancing: ")
-            puring = input("Pakai Puring? (y/n): ").lower() == 'y'
-            pesanan = PesananKorsa(id_str, nama, jumlah, tenggat, kancing, puring)
-        elif jenis == "3":
-            resleting = input("Jenis Resleting (YKK/Biasa): ")
-            furing = input("Bahan Furing (Despo/Jaring): ")
-            pesanan = PesananJaket(id_str, nama, jumlah, tenggat, resleting, furing)
-
-        if pesanan:
-            # Panggil polimorfisme untuk hitung biaya
-            total = pesanan.hitung_biaya_produksi()
-            self.daftar_pesanan.append(pesanan)
-            self.counter_id += 1
-            print(f"\nBerhasil Pesanan berhasil dibuat dengan Total Biaya: Rp {total:,.0f}")
+        except ValueError:
+            print(" [ERROR] Input jumlah harus berupa angka!")
 
     def bayar_dp(self):
         print("\n--- PEMBAYARAN DP ---")
@@ -186,12 +222,17 @@ class ConfectionerySystemCLI:
         pesanan = self._cari_pesanan(id_search)
         
         if pesanan:
-            print(f"Total Biaya Pesanan: Rp {pesanan.get_total_biaya():,.0f}")
-            nominal = float(input("Masukkan Nominal DP: Rp "))
-            
-            pesanan.set_bayar_dp(nominal)
+            print(f"Total Biaya Pesanan: {self.format_rupiah(pesanan.get_total_biaya())}")
+            try:
+                nominal = float(input("Masukkan Nominal DP: Rp "))
+                # Menangkap Custom Exception
+                pesanan.set_bayar_dp(nominal)
+            except ValueError:
+                print(" [ERROR] Nominal DP harus berupa angka!")
+            except DPIncompleteError as e:
+                print(e)
         else:
-            print("Gagal ID Pesanan tidak ditemukan!")
+            print(" [GAGAL] ID Pesanan tidak ditemukan!")
 
     def update_status(self):
         print("\n--- UPDATE STATUS PRODUKSI ---")
@@ -207,11 +248,18 @@ class ConfectionerySystemCLI:
             print("5. Selesai")
             st = input("Pilih (1-5): ")
             list_st = ["Potong Bahan", "Sablon / Bordir", "Penjahitan", "Finishing & QC", "Selesai"]
-            if 1 <= int(st) <= 5:
-                pesanan.update_status_produksi(list_st[int(st)-1])
-                print("oke Status produksi berhasil diperbarui!")
+            
+            try:
+                idx = int(st)
+                if 1 <= idx <= 5:
+                    pesanan.update_status_produksi(list_st[idx - 1])
+                    print(" [BERHASIL] Status produksi berhasil diperbarui!")
+                else:
+                    print(" [GAGAL] Pilihan status tidak tersedia!")
+            except ValueError:
+                print(" [ERROR] Input harus berupa angka 1-5!")
         else:
-            print("Gagal ID Pesanan tidak ditemukan!")
+            print(" [GAGAL] ID Pesanan tidak ditemukan!")
 
     def lihat_pesanan(self):
         if not self.daftar_pesanan:
