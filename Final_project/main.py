@@ -1,7 +1,7 @@
 import sys
 
 
-# 1. SUPER-CLASS (INHERITANCE BASE)
+
 
 class PesananPakaian:
     def __init__(self, id_pesanan, nama_pelanggan, jumlah_pcs, tenggat_waktu, harga_dasar_per_pcs):
@@ -11,13 +11,13 @@ class PesananPakaian:
         self.tenggat_waktu = tenggat_waktu
         self.harga_dasar_per_pcs = harga_dasar_per_pcs
         
-        # ENCAPSULATION (Atribut privat/protected)
+        
         self.__total_biaya = 0
         self.__jumlah_dp = 0
         self.__status_pembayaran = "Pending (Belum DP)"
         self.__status_produksi = "Antrean"
 
-    # Encapsulation: Getter & Setter dengan Validasi
+    
     def get_total_biaya(self):
         return self.__total_biaya
 
@@ -31,7 +31,7 @@ class PesananPakaian:
     def get_status_produksi(self):
         return self.__status_produksi
 
-    # Encapsulation: Validasi Pembayaran DP minimal 50%
+    
     def set_bayar_dp(self, nominal):
         if nominal < (self.__total_biaya * 0.5):
             print(f" [GAGAL] DP minimal 50% dari total tagihan (Rp {self.__total_biaya * 0.5:,.0f})")
@@ -46,7 +46,7 @@ class PesananPakaian:
     def update_status_produksi(self, status_baru):
         self.__status_produksi = status_baru
 
-    # POLYMORPHISM (Method dasar yang akan di-override)
+    
     def hitung_biaya_produksi(self):
         total = self.jumlah_pcs * self.harga_dasar_per_pcs
         self.set_total_biaya(total)
@@ -62,9 +62,6 @@ class PesananPakaian:
         print(f"Status Produksi  : {self.get_status_produksi()}")
 
 
-# ==========================================
-# 2. SUB-CLASSES (INHERITANCE & POLYMORPHISM)
-# ==========================================
 class PesananKaos(PesananPakaian):
     def __init__(self, id_pesanan, nama_pelanggan, jumlah_pcs, tenggat_waktu, jenis_sablon):
         super().__init__(id_pesanan, nama_pelanggan, jumlah_pcs, tenggat_waktu, harga_dasar_per_pcs=55000)
@@ -118,9 +115,6 @@ class PesananJaket(PesananPakaian):
         print(f"Kategori         : Jaket (Resleting: {self.jenis_resleting}, Furing: {self.bahan_furing})")
 
 
-# ==========================================
-# 3. CONTROLLER & INTERFACE CLI
-# ==========================================
 class ConfectionerySystemCLI:
     def __init__(self):
         self.daftar_pesanan = []
@@ -194,7 +188,7 @@ class ConfectionerySystemCLI:
         if pesanan:
             print(f"Total Biaya Pesanan: Rp {pesanan.get_total_biaya():,.0f}")
             nominal = float(input("Masukkan Nominal DP: Rp "))
-            # Memanggil fungsi Encapsulation
+            
             pesanan.set_bayar_dp(nominal)
         else:
             print("Gagal ID Pesanan tidak ditemukan!")
